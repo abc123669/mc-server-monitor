@@ -39,7 +39,7 @@ async function loadAdminServers() {
     renderAdminTable(list);
   } catch (e) {
     document.getElementById('adminTbody').innerHTML =
-      '<tr><td colspan="5" style="text-align:center;color:var(--red);padding:40px">加载失败</td></tr>';
+      '<tr><td colspan="5" style="text-align:center;color:var(--red);padding:32px">加载失败</td></tr>';
   }
 }
 
@@ -47,7 +47,7 @@ function renderAdminTable(list) {
   const tbody = document.getElementById('adminTbody');
   if (!list || list.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:40px">暂无服务器，点击右上角添加</td></tr>';
+      '<tr><td colspan="5" style="text-align:center;color:var(--text-tertiary);padding:32px">暂无服务器，点击右上角添加</td></tr>';
     return;
   }
 
@@ -60,8 +60,8 @@ function renderAdminTable(list) {
 
     return `
       <tr${isDormant ? ' style="opacity:.55"' : ''}>
-        <td><strong>${escHtml(s.name)}</strong>${isDormant ? ' <span style="font-size:11px;color:var(--gray)">💤休眠</span>' : ''}</td>
-        <td style="font-family:'Roboto Mono',monospace;font-size:13px">${escHtml(ipColon)}</td>
+        <td><strong>${escHtml(s.name)}</strong>${isDormant ? ' <span style="font-size:11px;color:var(--text-tertiary)">💤休眠</span>' : ''}</td>
+        <td style="font-family:'SF Mono','Fira Code',monospace;font-size:13px">${escHtml(ipColon)}</td>
         <td>${s.port || 25565}</td>
         <td><span class="status-dot ${statusClass}" style="display:inline-block;width:10px;height:10px;vertical-align:middle;margin-right:6px"></span>${statusText}</td>
         <td style="text-align:right">
