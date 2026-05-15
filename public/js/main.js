@@ -134,8 +134,9 @@ function setupInfiniteScroll() {
   if (sentinel) observer.observe(sentinel);
 }
 
-// ====== 3D Tilt ======
+// ====== 3D Tilt (desktop only — disabled on touch) ======
 function setupTiltEffects() {
+  if ('ontouchstart' in window) return; // Skip on mobile/tablet
   document.addEventListener('mouseover', e => {
     const card = e.target.closest('.server-card');
     if (!card || card.dataset.tilt === 'done') return;
