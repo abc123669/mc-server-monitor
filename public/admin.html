@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理后台 - MC Server Monitor</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔧</text></svg>">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* Admin-specific styles */
+    .admin-container {
+      max-width: 900px;
+      margin: 32px auto;
+      padding: 0 24px;
+    }
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .admin-header h2 {
+      font-family: 'Google Sans', sans-serif;
+      font-size: 24px;
+      font-weight: 500;
+    }
+    .back-link {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 20px;
+      transition: var(--transition);
+    }
+    .back-link:hover { background: var(--primary-light); }
+
+    /* Login */
+    .login-box {
+      max-width: 400px;
+      margin: 80px auto;
+      padding: 32px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .login-box h2 {
+      font-family: 'Google Sans', sans-serif;
+      font-size: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* Google-style Inputs */
+    .google-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: 'Roboto', sans-serif;
+      outline: none;
+      transition: var(--transition);
+      background: #fff;
+      margin-bottom: 12px;
+    }
+    .google-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-light);
+    }
+    textarea.google-input { resize: vertical; min-height: 60px; }
+
+    .google-btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: 'Google Sans', sans-serif;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .google-btn:hover { background: var(--primary-dark); box-shadow: var(--shadow); }
+    .google-btn.danger { background: var(--red); }
+    .google-btn.danger:hover { background: #b3261e; }
+    .google-btn.outline {
+      background: #fff;
+      color: var(--primary);
+      border: 1px solid var(--border);
+    }
+    .google-btn.outline:hover { background: var(--primary-light); }
+
+    /* Table */
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .admin-table th {
+      background: var(--gray-light);
+      font-weight: 500;
+      font-size: 13px;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .admin-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .admin-table tr:last-child td { border-bottom: none; }
+    .admin-table tr:hover td { background: #f8f9ff; }
+    .admin-table .actions {
+      display: flex;
+      gap: 8px;
+    }
+    .admin-table .actions button {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      background: #fff;
+      transition: var(--transition);
+    }
+    .admin-table .actions .edit-btn { color: var(--primary); }
+    .admin-table .actions .edit-btn:hover { background: var(--primary-light); border-color: var(--primary); }
+    .admin-table .actions .del-btn { color: var(--red); }
+    .admin-table .actions .del-btn:hover { background: var(--red-light); border-color: var(--red); }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,.4);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: #fff;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 480px;
+      padding: 32px;
+      box-shadow: 0 24px 48px rgba(0,0,0,.2);
+      animation: slideUp .3s ease;
+    }
+    .modal-box h3 {
+      font-family: 'Google Sans', sans-serif;
+      font-size: 20px;
+      margin-bottom: 20px;
+    }
+    .modal-btns {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 16px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #323232;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 999;
+      opacity: 0;
+      transition: opacity .3s ease;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="logo">M</div>
+        <h1>管理后台</h1>
+      </div>
+      <div class="header-right">
+        <a href="/" class="back-link">← 返回首页</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Login -->
+  <div class="login-box" id="loginBox">
+    <h2>🔑 管理员验证</h2>
+    <input type="password" class="google-input" id="adminKeyInput" placeholder="请输入管理密钥" onkeydown="if(event.key==='Enter') verifyLogin()">
+    <button class="google-btn" onclick="verifyLogin()" style="width:100%;justify-content:center">验证</button>
+    <p id="loginError" style="color:var(--red);font-size:13px;margin-top:8px;display:none"></p>
+  </div>
+
+  <!-- Admin Panel -->
+  <div class="admin-container" id="adminPanel" style="display:none">
+    <div class="admin-header">
+      <h2>服务器管理</h2>
+      <button class="google-btn" onclick="openAddModal()">＋ 添加服务器</button>
+    </div>
+
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>名称</th>
+          <th>IP</th>
+          <th>端口</th>
+          <th>状态</th>
+          <th style="text-align:right">操作</th>
+        </tr>
+      </thead>
+      <tbody id="adminTbody">
+        <tr><td colspan="5" style="text-align:center;color:var(--gray);padding:40px">加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-box">
+      <h3 id="modalTitle">添加服务器</h3>
+      <input type="text" class="google-input" id="modalName" placeholder="服务器名称（如：云栖小站）">
+      <input type="text" class="google-input" id="modalIp" placeholder="IP地址（如：mc.example.com）">
+      <input type="number" class="google-input" id="modalPort" placeholder="端口（默认 25565）" value="25565">
+      <textarea class="google-input" id="modalDesc" placeholder="服务器简介（可选）"></textarea>
+      <input type="hidden" id="modalEditId">
+      <div class="modal-btns">
+        <button class="google-btn outline" onclick="closeModal()">取消</button>
+        <button class="google-btn" id="modalSubmitBtn" onclick="submitModal()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirm Modal -->
+  <div class="modal-overlay" id="delModalOverlay">
+    <div class="modal-box" style="text-align:center">
+      <h3>确认删除？</h3>
+      <p style="color:var(--gray);font-size:14px;margin-bottom:16px" id="delModalName">-</p>
+      <div class="modal-btns" style="justify-content:center">
+        <button class="google-btn outline" onclick="closeDelModal()">取消</button>
+        <button class="google-btn danger" id="delConfirmBtn" onclick="confirmDelete()">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>
