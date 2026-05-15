@@ -51,6 +51,28 @@ async function checkAuth() {
   } catch (e) {}
 }
 
+// ====== Captcha ======
+async function loadCaptcha(target) {
+  try {
+    const res = await fetch('/api/captcha');
+    const data = await res.json();
+    const qEl = document.getElementById(target + 'CaptchaQuestion');
+    const inputEl = document.getElementById(target + 'CaptchaInput');
+    if (qEl) {
+      qEl.textContent = data.a + ' + ' + data.b;
+      qEl.dataset.token = data.token;
+    }
+    if (inputEl) { inputEl.value = ''; inputEl.focus(); }
+  } catch (e) {}
+}
+
+function refreshAuthCaptcha() { loadCaptcha('auth'); }
+function refreshAddCaptcha() { loadCaptcha('add'); }
+
+function getCaptchaValue(target) {
+  return document.getElementById(target + 'CaptchaInput')?.value || '';
+}
+
 // ====== Auth Modal ======
 function openAuthModal() {
   authMode = 'login';
@@ -61,6 +83,7 @@ function openAuthModal() {
   document.getElementById('authPass').value = '';
   document.getElementById('authError').style.display = 'none';
   document.getElementById('authModalOverlay').classList.add('active');
+  refreshAuthCaptcha();
   setTimeout(() => document.getElementById('authUser').focus(), 100);
 }
 
@@ -79,10 +102,16 @@ function toggleAuthMode() {
 async function submitAuth() {
   const username = document.getElementById('authUser').value.trim();
   const password = document.getElementById('authPass').value;
+  const captcha = getCaptchaValue('auth');
   const errEl = document.getElementById('authError');
 
   if (!username || !password) {
     errEl.textContent = '请填写完整';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!captcha) {
+    errEl.textContent = '请输入验证码';
     errEl.style.display = 'block';
     return;
   }
@@ -96,7 +125,7 @@ async function submitAuth() {
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password, captcha })
     });
     const data = await res.json();
     if (res.ok) {
@@ -105,6 +134,7 @@ async function submitAuth() {
     } else {
       errEl.textContent = data.error || '操作失败';
       errEl.style.display = 'block';
+      if (data.error === '验证码错误') refreshAuthCaptcha();
       btn.disabled = false;
       btn.textContent = authMode === 'login' ? '登录' : '注册';
     }
@@ -459,6 +489,7 @@ function openAddModal() {
   document.getElementById('addResult').style.display = 'none';
   document.getElementById('addSubmitBtn').disabled = false;
   document.getElementById('addSubmitBtn').textContent = '提交';
+  refreshAddCaptcha();
 }
 
 function closeAddModal() {
@@ -471,11 +502,13 @@ async function submitPublicAdd() {
   const port = parseInt(document.getElementById('addPort').value) || 25565;
   const desc = document.getElementById('addDesc').value.trim();
   const image_url = document.getElementById('addImage').value.trim();
+  const captcha = getCaptchaValue('add');
 
   const resultEl = document.getElementById('addResult');
   resultEl.style.display = 'block';
   if (!name) { resultEl.textContent = '请输入名称'; resultEl.style.color = 'var(--red)'; return; }
   if (!ip) { resultEl.textContent = '请输入 IP'; resultEl.style.color = 'var(--red)'; return; }
+  if (!captcha) { resultEl.textContent = '请输入验证码'; resultEl.style.color = 'var(--red)'; return; }
 
   const btn = document.getElementById('addSubmitBtn');
   btn.disabled = true; btn.textContent = '提交中...';
@@ -483,7 +516,7 @@ async function submitPublicAdd() {
     const res = await fetch('/api/servers/add', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, ip, port, description: desc, image_url })
+      body: JSON.stringify({ name, ip, port, description: desc, image_url, captcha })
     });
     const data = await res.json();
     if (res.ok) {
@@ -498,6 +531,7 @@ async function submitPublicAdd() {
       resultEl.textContent = data.error || '提交失败';
       resultEl.style.color = 'var(--red)';
       btn.disabled = false; btn.textContent = '提交';
+      if (data.error === '验证码错误') refreshAddCaptcha();
     }
   } catch (e) {
     resultEl.textContent = '网络错误';

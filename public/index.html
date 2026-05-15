@@ -161,6 +161,17 @@
       <input type="number" id="addPort" placeholder="端口（默认 25565）" value="25565">
       <textarea id="addDesc" class="rich-input" placeholder="简介（支持 HTML：&lt;b&gt;&lt;i&gt;&lt;img&gt; 等）" maxlength="2000"></textarea>
       <input type="text" id="addImage" placeholder="图片链接（可选，横幅/截图 URL）" maxlength="500">
+      <!-- Captcha -->
+      <div class="captcha-row" id="addCaptcha" style="margin:8px 0">
+        <div class="captcha-question">
+          <span id="addCaptchaQuestion">?</span>
+          <span class="captcha-eq">=</span>
+          <input type="number" class="captcha-input" id="addCaptchaInput" placeholder="?">
+        </div>
+        <button class="captcha-refresh" onclick="refreshAddCaptcha()" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </button>
+      </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
         <button class="glass-btn outline" onclick="closeAddModal()">取消</button>
         <button class="glass-btn" id="addSubmitBtn" onclick="submitPublicAdd()">提交</button>
@@ -180,6 +191,17 @@
       <div id="loginForm">
         <input type="text" class="glass-input" id="authUser" placeholder="用户名" maxlength="20" onkeydown="if(event.key==='Enter') submitAuth()">
         <input type="password" class="glass-input" id="authPass" placeholder="密码" onkeydown="if(event.key==='Enter') submitAuth()">
+        <!-- Captcha -->
+        <div class="captcha-row" id="authCaptcha">
+          <div class="captcha-question">
+            <span id="authCaptchaQuestion">?</span>
+            <span class="captcha-eq">=</span>
+            <input type="number" class="captcha-input" id="authCaptchaInput" placeholder="?" onkeydown="if(event.key==='Enter') submitAuth()">
+          </div>
+          <button class="captcha-refresh" onclick="refreshAuthCaptcha()" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          </button>
+        </div>
         <div style="display:flex;gap:10px;justify-content:space-between;margin-top:8px">
           <button class="glass-btn outline" onclick="toggleAuthMode()" id="authToggle">没有账号？注册</button>
           <button class="glass-btn" id="authSubmitBtn" onclick="submitAuth()">登录</button>

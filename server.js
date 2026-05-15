@@ -68,7 +68,7 @@ app.use(session({
   store: new SQLiteStore({ dir: __dirname, db: 'sessions.db' }),
   secret: 'mc-monitor-secret-2026',
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true,
   cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }
 }));
 
@@ -92,8 +92,25 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// ===== Captcha =====
+app.get('/api/captcha', (req, res) => {
+  const a = Math.floor(Math.random() * 10) + 1;
+  const b = Math.floor(Math.random() * 10) + 1;
+  req.session.captchaAnswer = a + b;
+  res.json({ a, b, token: req.session.id });
+});
+
+function requireCaptcha(req, res, next) {
+  const { captcha } = req.body;
+  if (!captcha || parseInt(captcha) !== req.session.captchaAnswer) {
+    return res.status(400).json({ error: '验证码错误' });
+  }
+  req.session.captchaAnswer = null; // one-time use
+  next();
+}
+
 // ===== Auth Routes =====
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', requireCaptcha, (req, res) => {
   const { username, password } = req.body;
   if (!username || !password || username.length < 2 || password.length < 4)
     return res.status(400).json({ error: '用户名至少2位，密码至少4位' });
@@ -109,7 +126,7 @@ app.post('/api/auth/register', (req, res) => {
   }
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', requireCaptcha, (req, res) => {
   const { username, password } = req.body;
   const user = db.prepare('SELECT * FROM users WHERE username=?').get(username);
   if (!user || !verifyPassword(password, user.password_hash))
@@ -233,8 +250,8 @@ app.post('/api/admin/verify', (req, res) => {
   res.json({ valid: req.body.key === ADMIN_KEY });
 });
 
-// ===== Public Add Server (requires auth) =====
-app.post('/api/servers/add', requireAuth, async (req, res) => {
+// ===== Public Add Server (requires auth + captcha) =====
+app.post('/api/servers/add', requireAuth, requireCaptcha, async (req, res) => {
   const { name, ip, port, description, image_url } = req.body;
   if (!name || !ip) return res.status(400).json({ error: '名称和IP不能为空' });
   if (name.length > 50 || ip.length > 200) return res.status(400).json({ error: '参数过长' });
