@@ -81,6 +81,7 @@ function openAddModal() {
   document.getElementById('modalIp').value = '';
   document.getElementById('modalPort').value = '25565';
   document.getElementById('modalDesc').value = '';
+  document.getElementById('modalImage').value = '';
   document.getElementById('modalEditId').value = '';
   document.getElementById('modalSubmitBtn').textContent = '保存';
   document.getElementById('modalOverlay').classList.add('active');
@@ -94,6 +95,7 @@ async function openEditModal(id) {
   document.getElementById('modalIp').value = s.ip;
   document.getElementById('modalPort').value = s.port || 25565;
   document.getElementById('modalDesc').value = s.description || '';
+  document.getElementById('modalImage').value = s.image_url || '';
   document.getElementById('modalEditId').value = id;
   document.getElementById('modalSubmitBtn').textContent = '更新';
   document.getElementById('modalOverlay').classList.add('active');
@@ -109,6 +111,7 @@ async function submitModal() {
   const ip = document.getElementById('modalIp').value.trim();
   const port = parseInt(document.getElementById('modalPort').value) || 25565;
   const desc = document.getElementById('modalDesc').value.trim();
+  const image_url = document.getElementById('modalImage').value.trim();
 
   if (!name) { showToast('请输入服务器名称'); return; }
   if (!ip) { showToast('请输入IP地址'); return; }
@@ -119,7 +122,7 @@ async function submitModal() {
       await fetch(`/api/admin/servers/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: KEY, name, ip, port, description: desc })
+        body: JSON.stringify({ key: KEY, name, ip, port, description: desc, image_url })
       });
       showToast('✅ 已更新');
     } else {
@@ -127,7 +130,7 @@ async function submitModal() {
       await fetch('/api/admin/servers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: KEY, name, ip, port, description: desc })
+        body: JSON.stringify({ key: KEY, name, ip, port, description: desc, image_url })
       });
       showToast('✅ 已添加');
     }

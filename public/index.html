@@ -22,6 +22,10 @@
         </a>
         <button class="add-btn" onclick="openAddModal()">+ 收录</button>
         <a href="/admin.html">管理</a>
+        <button id="userBtn" class="user-btn" onclick="openAuthModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span id="userName">登录</span>
+        </button>
       </div>
     </div>
   </header>
@@ -62,32 +66,45 @@
     <div id="sentinel" class="sentinel"></div>
   </div>
 
-  <!-- ====== Detail Overlay ====== -->
+  <!-- ====== Detail Overlay (with comments) ====== -->
   <div class="detail-overlay" id="detailOverlay" onclick="closeDetail(event)">
-    <div class="detail-panel" id="detailPanel">
+    <div class="detail-panel detail-panel-wide" id="detailPanel">
       <button class="close-btn" onclick="closeDetail()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
-      <h2 id="detailName">-</h2>
-      <div class="detail-ip" id="detailIp">-</div>
-      <div class="detail-desc" id="detailDesc">-</div>
-      <div class="detail-meta">
-        <div>
-          <div class="num green" id="detailOnline">0</div>
-          <div class="lbl">当前在线</div>
+
+      <!-- Server Info -->
+      <div class="detail-main">
+        <div id="detailImageWrap" class="detail-image-wrap" style="display:none">
+          <img id="detailImage" class="detail-image" src="" alt="">
         </div>
-        <div>
-          <div class="num blue" id="detailLatency">0</div>
-          <div class="lbl">延迟 (ms)</div>
-        </div>
-        <div>
-          <div class="num" id="detailVersion">-</div>
-          <div class="lbl">版本</div>
+        <h2 id="detailName">-</h2>
+        <div class="detail-ip" id="detailIp">-</div>
+        <div class="detail-desc" id="detailDesc">-</div>
+        <div class="detail-meta">
+          <div>
+            <div class="num green" id="detailOnline">0</div>
+            <div class="lbl">当前在线</div>
+          </div>
+          <div>
+            <div class="num blue" id="detailLatency">0</div>
+            <div class="lbl">延迟 (ms)</div>
+          </div>
+          <div>
+            <div class="num" id="detailVersion">-</div>
+            <div class="lbl">版本</div>
+          </div>
+          <div>
+            <div class="stars-display" id="detailStars"></div>
+            <div class="lbl" id="detailRatingLabel">暂无评分</div>
+          </div>
         </div>
       </div>
+
+      <!-- Chart -->
       <div class="uptime-bar">
         <div class="peak-info" id="peakInfo">
-          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> 峰值：<strong id="peakPlayers">-</strong> 人</span>
+          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> 峰值：<strong id="peakPlayers">-</strong> 人</span>
           <span>在线率：<strong id="detailUptime">-</strong></span>
         </div>
         <div class="range-btns">
@@ -96,30 +113,54 @@
           <button class="range-btn" data-range="30d">30天</button>
         </div>
         <div class="chart-wrapper">
-          <div class="chart-container" id="chartContainer">
-            <div class="chart-loading">加载中...</div>
-          </div>
-          <div class="chart-timeline">
-            <span id="tlStart">-</span>
-            <span id="tlEnd">-</span>
-          </div>
+          <div class="chart-container" id="chartContainer"><div class="chart-loading">加载中...</div></div>
+          <div class="chart-timeline"><span id="tlStart">-</span><span id="tlEnd">-</span></div>
         </div>
+      </div>
+
+      <!-- Comments Section -->
+      <div class="comments-section">
+        <div class="comments-header">
+          <span>评论</span>
+          <span class="comment-count" id="commentCount">0</span>
+        </div>
+
+        <!-- Comment Form -->
+        <div class="comment-form" id="commentForm">
+          <div class="star-select" id="starSelect">
+            <span class="star star-empty" data-val="1">★</span>
+            <span class="star star-empty" data-val="2">★</span>
+            <span class="star star-empty" data-val="3">★</span>
+            <span class="star star-empty" data-val="4">★</span>
+            <span class="star star-empty" data-val="5">★</span>
+          </div>
+          <textarea id="commentInput" class="comment-input" placeholder="说点什么..." maxlength="500"></textarea>
+          <div class="comment-form-actions">
+            <span class="comment-char-count" id="charCount">0/500</span>
+            <button class="glass-btn" id="commentSubmitBtn" onclick="submitComment()">发表</button>
+          </div>
+          <p id="commentError" style="color:var(--red);font-size:12px;margin-top:4px;display:none"></p>
+        </div>
+
+        <!-- Comment List -->
+        <div id="commentList" class="comment-list"></div>
       </div>
     </div>
   </div>
 
   <!-- ====== Add Server Modal ====== -->
   <div class="detail-overlay" id="addModalOverlay">
-    <div class="detail-panel" style="max-width:440px">
+    <div class="detail-panel" style="max-width:480px">
       <button class="close-btn" onclick="closeAddModal()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
       <h2 style="font-size:22px;font-weight:700;margin-bottom:4px">收录服务器</h2>
-      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:20px">分享你发现的服务器，让更多人看到</p>
+      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">分享你发现的服务器，让更多人看到</p>
       <input type="text" id="addName" placeholder="服务器名称" maxlength="50">
       <input type="text" id="addIp" placeholder="IP 地址" maxlength="200">
       <input type="number" id="addPort" placeholder="端口（默认 25565）" value="25565">
-      <textarea id="addDesc" placeholder="简介（版本、特色、玩法）" maxlength="500"></textarea>
+      <textarea id="addDesc" class="rich-input" placeholder="简介（支持 HTML：&lt;b&gt;&lt;i&gt;&lt;img&gt; 等）" maxlength="2000"></textarea>
+      <input type="text" id="addImage" placeholder="图片链接（可选，横幅/截图 URL）" maxlength="500">
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
         <button class="glass-btn outline" onclick="closeAddModal()">取消</button>
         <button class="glass-btn" id="addSubmitBtn" onclick="submitPublicAdd()">提交</button>
@@ -128,11 +169,31 @@
     </div>
   </div>
 
+  <!-- ====== Auth Modal (Login / Register) ====== -->
+  <div class="detail-overlay" id="authModalOverlay">
+    <div class="detail-panel" style="max-width:400px">
+      <button class="close-btn" onclick="closeAuthModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:16px" id="authTitle">登录</h2>
+
+      <div id="loginForm">
+        <input type="text" class="glass-input" id="authUser" placeholder="用户名" maxlength="20" onkeydown="if(event.key==='Enter') submitAuth()">
+        <input type="password" class="glass-input" id="authPass" placeholder="密码" onkeydown="if(event.key==='Enter') submitAuth()">
+        <div style="display:flex;gap:10px;justify-content:space-between;margin-top:8px">
+          <button class="glass-btn outline" onclick="toggleAuthMode()" id="authToggle">没有账号？注册</button>
+          <button class="glass-btn" id="authSubmitBtn" onclick="submitAuth()">登录</button>
+        </div>
+        <p id="authError" style="color:var(--red);font-size:12px;margin-top:8px;display:none"></p>
+      </div>
+    </div>
+  </div>
+
   <!-- ====== Footer ====== -->
   <div class="footer">
     MC Server Monitor &mdash; 每5分钟检测一次 &middot; 数据保留30天
   </div>
 
-  <script src="/js/main.js?v=6"></script>
+  <script src="/js/main.js?v=7"></script>
 </body>
 </html>
