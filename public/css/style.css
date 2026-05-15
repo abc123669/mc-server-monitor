@@ -310,23 +310,24 @@ body {
   cursor: pointer;
   transform-style: preserve-3d;
   perspective: 800px;
-  will-change: transform;
-  -webkit-transform: translateZ(0);
+  /* NOT adding will-change / translateZ(0) — they force GPU layers
+     on ALL cards and cause mobile rendering corruption during scroll */
 }
 
-.server-card:hover {
-  border-color: var(--glass-border-hover);
-  box-shadow: var(--glass-shadow-hover);
-  transform: translateY(-3px) scale(1.02);
-}
-
-.server-card:active {
-  transform: scale(0.98);
-}
-
-/* 3D Tilt via JS */
-.server-card.tilt-active {
-  transition: transform 0.1s ease-out;
+/* Desktop-only hover: mice have real hover, touch doesn't */
+@media (hover: hover) and (pointer: fine) {
+  .server-card:hover {
+    border-color: var(--glass-border-hover);
+    box-shadow: var(--glass-shadow-hover);
+    transform: translateY(-3px) scale(1.02);
+  }
+  .server-card:active {
+    transform: scale(0.98);
+  }
+  /* 3D Tilt via JS (desktop only — disabled in JS on touch) */
+  .server-card.tilt-active {
+    transition: transform 0.1s ease-out;
+  }
 }
 
 .server-card .top {
@@ -886,10 +887,16 @@ body {
     perspective: none;
     will-change: auto;
     -webkit-transform: none;
+    transform: none;
     background: rgba(255, 255, 255, 0.08);
+    touch-action: manipulation;
   }
-  .server-card:hover {
-    transform: translateY(-2px);
+  /* Mobile: no hover transforms at all — prevents stuck hover → GPU layer */
+  .server-card:hover,
+  .server-card:active,
+  .server-card.tilt-active {
+    transform: none !important;
+    -webkit-transform: none !important;
     box-shadow: var(--glass-shadow);
   }
 
