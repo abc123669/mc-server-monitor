@@ -71,9 +71,13 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   min-height: 100vh;
-  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Desktop-only: fixed background — huge performance issue on mobile Chrome */
+@media (min-width: 769px) {
+  body { background-attachment: fixed; }
 }
 
 /* ====== Glass Navigation ====== */
@@ -865,6 +869,11 @@ body {
 
 /* ====== Responsive ====== */
 @media (max-width: 768px) {
+  /* Mobile: simple scroll background — no fixed-attachment (GPU killer on Chrome Android) */
+  body {
+    background-attachment: scroll;
+    background-size: cover;
+  }
   .hero { padding: 40px 16px 28px; }
   .hero h2 { font-size: 28px; }
   .hero p { font-size: 14px; }
