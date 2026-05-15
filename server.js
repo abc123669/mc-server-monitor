@@ -301,7 +301,8 @@ function checkDormancy() {
       console.log(`🔄 "${s.name}" 已恢复`);
     }
   }
-  const toDelete = db.prepare('SELECT id,name FROM servers WHERE status=\\'dormant\\' AND dormancy_started_at<?').all(thirtyDaysAgo);
+  // 清理：休眠超过30天
+  const toDelete = db.prepare("SELECT id,name FROM servers WHERE status='dormant' AND dormancy_started_at<?").all(thirtyDaysAgo);
   for (const s of toDelete) {
     db.prepare('DELETE FROM comments WHERE server_id=?').run(s.id);
     db.prepare('DELETE FROM check_logs WHERE server_id=?').run(s.id);
@@ -333,3 +334,4 @@ setInterval(() => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 MC Server Monitor :${PORT}`);
 });
+
