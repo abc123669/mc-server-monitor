@@ -16,6 +16,10 @@ const SYNC_SECRET = process.env.SYNC_SECRET || 'sync-mc-2026';
 const db = new Database(path.join(__dirname, 'data.db'));
 db.pragma('journal_mode = WAL');
 
+// Add composite index for check_logs (critical for fast MAX(id) queries)
+db.exec("CREATE INDEX IF NOT EXISTS idx_check_server_id ON check_logs(server_id, id)");
+try { db.exec("ALTER TABLE servers ADD COLUMN comments_count INTEGER DEFAULT 0"); } catch(e) {}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS servers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -156,17 +160,19 @@ app.get('/api/servers', (req, res) => {
   let where = "s.status = 'active'";
   if (show === 'all') where = "s.status IN ('active','dormant')";
 
-  // Search with rating-weighted sorting
   if (q && q.trim()) {
-    const s = q.trim();
-    where = `(s.status='active' OR s.status='dormant') AND (s.name LIKE '%${s}%' OR s.ip LIKE '%${s}%' OR s.description LIKE '%${s}%')`;
+    const sq = q.trim();
+    where = `(s.status='active' OR s.status='dormant') AND (s.name LIKE '%${sq}%' OR s.ip LIKE '%${sq}%' OR s.description LIKE '%${sq}%')`;
   }
 
-  const baseQuery = `SELECT s.*,cl.online,cl.players_online,cl.max_players,cl.latency,cl.version,cl.checked_at,
-    COALESCE((SELECT AVG(rating) FROM comments WHERE server_id=s.id), 1.0) as avg_rating,
-    COALESCE((SELECT COUNT(*) FROM comments WHERE server_id=s.id), 0) as comment_count
+  // Efficient latest-check CTE: anti-join pattern (fast with composite index)
+  const baseQuery = `SELECT s.*,lc.online,lc.players_online,lc.max_players,lc.latency,lc.version,lc.checked_at,
+    COALESCE(s.rating, 1.0) as avg_rating,
+    s.comments_count as comment_count
     FROM servers s
-    LEFT JOIN (SELECT server_id,online,players_online,max_players,latency,version,checked_at FROM check_logs WHERE id IN (SELECT MAX(id) FROM check_logs GROUP BY server_id)) cl ON s.id=cl.server_id
+    LEFT JOIN check_logs lc ON lc.id=(
+      SELECT MAX(cl2.id) FROM check_logs cl2 WHERE cl2.server_id=s.id
+    )
     WHERE ${where}`;
 
   if (page) {
@@ -174,14 +180,13 @@ app.get('/api/servers', (req, res) => {
     const l = Math.min(50, Math.max(1, parseInt(limit) || 10));
     const offset = (p - 1) * l;
     const total = db.prepare(`SELECT COUNT(*) as c FROM servers s WHERE ${where}`).get().c;
-    // Sort by: online DESC, then (players_online * avg_rating) DESC
-    const qSort = q ? "cl.online DESC, (cl.players_online * COALESCE((SELECT AVG(rating) FROM comments WHERE server_id=s.id), 1.0)) DESC" : "cl.online DESC, cl.players_online DESC";
+    // Sort: online first, then (players_online * rating)
+    const qSort = "lc.online DESC, (lc.players_online * COALESCE(s.rating, 1.0)) DESC";
     const rows = db.prepare(`${baseQuery} ORDER BY ${qSort} LIMIT ? OFFSET ?`).all(l, offset);
     return res.json({ servers: rows, total, page: p, hasMore: offset + l < total });
   }
 
-  const qSort = q ? "cl.online DESC, (cl.players_online * COALESCE((SELECT AVG(rating) FROM comments WHERE server_id=s.id), 1.0)) DESC" : "cl.online DESC, cl.players_online DESC";
-  res.json(db.prepare(`${baseQuery} ORDER BY ${qSort}`).all());
+  res.json(db.prepare(`${baseQuery} ORDER BY lc.online DESC, (lc.players_online * COALESCE(s.rating, 1.0)) DESC`).all());
 });
 
 // ===== Comments API =====
@@ -203,7 +208,7 @@ app.post('/api/servers/:id/comments', requireAuth, (req, res) => {
       req.params.id, req.session.userId, req.session.username, r, content.trim()
     );
     const avg = db.prepare('SELECT AVG(rating) as a FROM comments WHERE server_id=?').get(req.params.id);
-    db.prepare('UPDATE servers SET rating=? WHERE id=?').run(avg.a || 1.0, req.params.id);
+    db.prepare('UPDATE servers SET rating=?, comments_count=(SELECT COUNT(*) FROM comments WHERE server_id=?) WHERE id=?').run(avg.a || 1.0, req.params.id, req.params.id);
   });
   tx();
 
@@ -268,7 +273,8 @@ app.post('/api/servers/add', requireAuth, requireCaptcha, async (req, res) => {
 // ===== Stats =====
 app.get('/api/stats', (req, res) => {
   const total = db.prepare("SELECT COUNT(*) as c FROM servers WHERE status='active'").get();
-  const online = db.prepare("SELECT COUNT(*) as c FROM servers s JOIN check_logs cl ON cl.id=(SELECT MAX(id) FROM check_logs WHERE server_id=s.id AND checked_at>=datetime('now','localtime','-15 minutes')) WHERE s.status='active' AND cl.online=1").get();
+  // Use the same efficient pattern with composite index
+  const online = db.prepare("SELECT COUNT(*) as c FROM servers s WHERE s.status='active' AND (SELECT online FROM check_logs WHERE server_id=s.id ORDER BY id DESC LIMIT 1)=1").get();
   res.json({ total: total.c, online: online.c });
 });
 

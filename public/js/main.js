@@ -21,10 +21,18 @@ const ICONS = {
 };
 
 // ====== Init ======
-document.addEventListener('DOMContentLoaded', async () => {
-  await checkAuth();
-  loadMore();
-  loadStats();
+document.addEventListener('DOMContentLoaded', () => {
+  // Show loading skeleton immediately
+  document.getElementById('serverGrid').innerHTML = Array(6).fill(`
+    <div class="server-card skeleton">
+      <div class="top"><div class="skeleton-line w-60"></div></div>
+      <div class="ip-row"><div class="skeleton-line w-40"></div></div>
+      <div class="stars-row"><div class="skeleton-line w-30"></div></div>
+      <div class="desc"><div class="skeleton-line w-80"></div><div class="skeleton-line w-50"></div></div>
+      <div class="meta"><div class="skeleton-line w-50"></div></div>
+    </div>`).join('');
+  // Load everything in parallel
+  Promise.all([checkAuth(), loadMore(), loadStats()]);
   setInterval(loadStats, 30000);
   setupInfiniteScroll();
   setupTiltEffects();
@@ -197,6 +205,7 @@ async function loadMore() {
     const res = await fetch(`/api/servers?page=${page}&limit=10`);
     const data = await res.json();
     const grid = document.getElementById('serverGrid');
+    if (page === 1) grid.innerHTML = ''; // Clear skeleton on first load
     if (page === 1 && (!data.servers || data.servers.length === 0)) {
       grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="icon">⛏</div><h3>还没收录服务器</h3><p>点击「+ 收录」分享你发现的服务器</p></div>';
       document.getElementById('sentinel').textContent = '';
